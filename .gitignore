@@ -22,3 +22,14 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# IDEs and Helpers
+.idea/
+.vscode/
+_ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
+
+# Logs
+npm-debug.log
+yarn-error.log
