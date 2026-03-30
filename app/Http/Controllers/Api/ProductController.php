@@ -122,6 +122,8 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         $product->delete(); // Soft deletes if enabled. Morph relations might need manual deletion if needed or rely on cascading.
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        return response()->json([
+            'message' => 'Product deleted successfully',
+        ], Response::HTTP_OK);
     }
 }
