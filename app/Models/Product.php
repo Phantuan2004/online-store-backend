@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'description', 'price', 'category_id'])]
@@ -27,5 +29,15 @@ class Product extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function images(): MorphMany
+    {
+        return $this->morphMany(Media::class, 'model');
+    }
+
+    public function image(): MorphOne
+    {
+        return $this->morphOne(Media::class, 'model')->where('is_primary', true);
     }
 }
