@@ -25,15 +25,13 @@ use App\Http\Controllers\Api\UserController;
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
-// Products
-Route::apiResource('products', ProductController::class);
+// Products (Public View)
+Route::apiResource('products', ProductController::class)->only(['index', 'show']);
 
-// Attributes
-Route::apiResource('attributes', AttributeController::class)->only(['index', 'store']);
-Route::post('attributes/{attribute}/values', [AttributeController::class, 'addValue']);
+// Attributes (Public View)
+Route::get('attributes', [AttributeController::class, 'index']);
 
-// Payments
-Route::post('payments', [PaymentController::class, 'createPayment']);
+// Payments Callback (Public for Gateway)
 Route::post('payments/callback', [PaymentController::class, 'handleCallback']);
 
 
@@ -49,9 +47,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('user/profile', [UserController::class, 'profile']);
     Route::put('user/profile', [UserController::class, 'updateProfile']);
 
+    // Payments (Auth Required to initiate)
+    Route::post('payments', [PaymentController::class, 'createPayment']);
+
     // Admin Routes
     Route::prefix('admin')->middleware('is_admin')->group(function () {
         Route::apiResource('users', UserController::class);
+        
+        // Admin Product Management
+        Route::apiResource('products', ProductController::class)->except(['index', 'show']);
+        
+        // Admin Attribute Management
+        Route::post('attributes', [AttributeController::class, 'store']);
+        Route::post('attributes/{attribute}/values', [AttributeController::class, 'addValue']);
     });
 
     // Cart
