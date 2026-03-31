@@ -84,7 +84,7 @@ class AuthController extends Controller
             43200, // 30 ngày tính bằng phút
             null,
             null,
-            false, // secure - set true in production
+            false, // secure - đổi thành true khi đưa lên môi trường https
             true,  // httpOnly
             false, // raw
             'Lax'  // sameSite
@@ -106,7 +106,7 @@ class AuthController extends Controller
     public function logout()
     {
         $user = auth()->user();
-        
+
         // Thu hồi token hiện tại
         if ($user && $user->currentAccessToken()) {
             $user->currentAccessToken()->delete();
