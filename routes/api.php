@@ -31,6 +31,7 @@ Route::apiResource('products', ProductController::class)->only(['index', 'show']
 
 // Attributes (Public View)
 Route::get('attributes', [AttributeController::class, 'index']);
+Route::get('attributes/{attribute}', [AttributeController::class, 'show']);
 
 // Payments Callback (Public for Gateway)
 Route::post('payments/callback', [PaymentController::class, 'handleCallback']);
@@ -52,6 +53,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('is_admin')->group(function () {
         Route::get('users', [UserController::class, 'index']);
         Route::get('users/{user}', [UserController::class, 'show']);
+        
+        // Attributes Management (Admin only, no prefix)
+        Route::post('attributes', [AttributeController::class, 'store']);
+        Route::put('attributes/{attribute}', [AttributeController::class, 'update']);
+        Route::delete('attributes/{attribute}', [AttributeController::class, 'destroy']);
     });
 
     // Payments (Auth Required to initiate)
@@ -63,10 +69,6 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Admin Product Management
         Route::apiResource('products', ProductController::class)->except(['index', 'show']);
-        
-        // Admin Attribute Management
-        Route::post('attributes', [AttributeController::class, 'store']);
-        Route::post('attributes/{attribute}/values', [AttributeController::class, 'addValue']);
     });
 
     // Cart
