@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\UserController;
 // Auth (Public)
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
+Route::post('refresh', [AuthController::class, 'refresh']);
 
 // Products (Public View)
 Route::apiResource('products', ProductController::class)->only(['index', 'show']);
