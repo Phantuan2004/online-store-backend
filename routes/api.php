@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\AttributeValueController;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,6 +59,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('attributes', [AttributeController::class, 'store']);
         Route::put('attributes/{attribute}', [AttributeController::class, 'update']);
         Route::delete('attributes/{attribute}', [AttributeController::class, 'destroy']);
+        
+        // Attribute Values Management
+        Route::post('attributes/{attribute}/values', [AttributeValueController::class, 'store']);
+        Route::delete('attribute-values/{attributeValue}', [AttributeValueController::class, 'destroy']);
     });
 
     // Payments (Auth Required to initiate)

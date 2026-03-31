@@ -14,7 +14,12 @@ class StoreAttributeValueRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'value' => ['required', 'string', 'max:255'],
+            'value' => [
+                'required', 
+                'string', 
+                'max:255',
+                \Illuminate\Validation\Rule::unique('attribute_values')->where('attribute_id', $this->route('attribute')->id)
+            ],
         ];
     }
 }
