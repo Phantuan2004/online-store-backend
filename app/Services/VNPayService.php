@@ -4,13 +4,19 @@ namespace App\Services;
 
 class VNPayService
 {
-    protected $vnp_TmnCode = "CPU0V60I"; // Sandbox TmnCode
-    protected $vnp_HashSecret = "ZQUOPWUPWLYWRXURDIPWZXNUXWXWZUYZ"; // Sandbox HashSecret
-    protected $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+    protected $vnp_TmnCode;
+    protected $vnp_HashSecret;
+    protected $vnp_Url;
     protected $vnp_Returnurl;
 
     public function __construct()
     {
+        $config = config('services.vnpay');
+
+        $this->vnp_TmnCode = $config['tmn_code'] ?? '2QXG2YLS';
+        $this->vnp_HashSecret = $config['hash_secret'] ?? '9B9LNS64I9E3WBSV24A587A1Y8Q53T8J';
+        $this->vnp_Url = $config['url'] ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+
         // Trong thực tế, URL này nên trỏ về Frontend route xử lý kết quả
         $this->vnp_Returnurl = url('/api/payments/callback');
     }
