@@ -13,8 +13,8 @@ class OrderItemResource extends JsonResource
             'id' => $this->id,
             'quantity' => $this->quantity,
             'price' => $this->price,
-            'product_name' => $this->product_name,
-            'sku' => $this->sku,
+            'product_name' => $this->variant->product->name ?? null,
+            'sku' => $this->variant->sku ?? null,
             'variant' => new ProductVariantResource($this->whenLoaded('variant')),
         ];
     }
