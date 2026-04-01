@@ -61,23 +61,57 @@ class CartController extends Controller
             abort(403);
         }
 
-        $newQuantity = (int) $request->validated('quantity');
+        $validated = $request->validated();
+        $targetVariant = $cartItem->variant;
 
-        if ($newQuantity > $cartItem->variant->stock) {
+        // 1. Xử lý đổi thuộc tính (Attribute) nếu có
+        if (isset($validated['attribute_value_ids'])) {
+            $newVariant = \App\Models\ProductVariant::findByAttributes(
+                $cartItem->variant->product_id,
+                $validated['attribute_value_ids']
+            );
+
+            if (!$newVariant) {
+                return response()->json([
+                    'message' => 'Rất tiếc, không tìm thấy phiên bản sản phẩm với các thuộc tính đã chọn.',
+                ], 404);
+            }
+
+            // Chặn nếu biến thể mới đã có trong mục khác của giỏ hàng
+            $alreadyInCart = $cartItem->cart->items()
+                ->where('product_variant_id', $newVariant->id)
+                ->where('id', '!=', $cartItem->id)
+                ->exists();
+
+            if ($alreadyInCart) {
+                return response()->json([
+                    'message' => 'Sản phẩm với bộ thuộc tính này đã tồn tại trong giỏ hàng của bạn.',
+                ], 422);
+            }
+
+            $targetVariant = $newVariant;
+            $cartItem->product_variant_id = $newVariant->id;
+        }
+
+        // 2. Xử lý cập nhật số lượng (mặc định lấy số lượng hiện tại nếu không truyền)
+        $newQuantity = isset($validated['quantity']) ? (int) $validated['quantity'] : $cartItem->quantity;
+
+        if ($newQuantity > $targetVariant->stock) {
             return response()->json([
-                'message' => 'Rất tiếc, số lượng cập nhật vượt quá tồn kho.',
+                'message' => 'Rất tiếc, số lượng vượt quá tồn kho hiện có.',
                 'errors' => [
-                    'quantity' => ['Số lượng tồn kho chỉ còn: ' . $cartItem->variant->stock]
+                    'quantity' => ['Số lượng tồn kho chỉ còn: ' . $targetVariant->stock]
                 ]
             ], 422);
         }
 
-        $cartItem->update(['quantity' => $newQuantity]);
+        $cartItem->quantity = $newQuantity;
+        $cartItem->save();
 
-        // Cập nhật lại thông tin giỏ hàng để hiển thị đúng tổng tiền
+        // Load lại quan hệ để trả về Resource đầy đủ thông tin nhất
         $cart = $cartItem->cart->load(['items.variant.product', 'items.variant.attributeValues.attribute']);
 
-        return (new CartResource($cart))->additional(['message' => 'Cập nhật số lượng thành công']);
+        return (new CartResource($cart))->additional(['message' => 'Cập nhật giỏ hàng thành công']);
     }
 
     public function removeItem(Request $request, CartItem $cartItem)

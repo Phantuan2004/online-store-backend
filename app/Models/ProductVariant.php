@@ -34,4 +34,13 @@ class ProductVariant extends Model
     {
         return $this->morphOne(Media::class, 'model')->where('is_primary', true);
     }
+
+    public static function findByAttributes(int $productId, array $attributeValueIds): ?self
+    {
+        return self::where('product_id', $productId)
+            ->whereHas('attributeValues', function ($query) use ($attributeValueIds) {
+                $query->whereIn('attribute_value_id', $attributeValueIds);
+            }, '=', count($attributeValueIds))
+            ->first();
+    }
 }
