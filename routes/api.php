@@ -91,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Orders
     Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'store']);
+    Route::post('orders/{order}/cancel', [OrderController::class, 'cancel']);
 
     // Reviews (Nested Routes)
     Route::prefix('products/{product}/reviews')->group(function () {
