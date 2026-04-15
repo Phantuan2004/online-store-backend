@@ -45,7 +45,9 @@ class AuthController extends Controller
             ]);
         }
 
-        return $this->respondWithTokens($user);
+        $rememberMe = $request->boolean('remember_me', false);
+
+        return $this->respondWithTokens($user, 200, $rememberMe);
     }
 
     public function refresh(Request $request)
@@ -70,32 +72,41 @@ class AuthController extends Controller
         return $this->respondWithTokens($user);
     }
 
-    protected function respondWithTokens(User $user, $status = 200)
+    protected function respondWithTokens(User $user, $status = 200, bool $rememberMe = false)
     {
-        // 1. Tạo Access Token (Ngắn hạn - 30 phút)
+        // 1. Tạo Access Token (Ngắn hạn - 30 phút) - luôn cấp
         $accessToken = $user->createToken('access_token', ['*'], now()->addMinutes(30));
 
-        // 2. Tạo Refresh Token (Dài hạn - 30 ngày)
-        $refreshToken = $user->createToken('refresh_token', ['refresh'], now()->addDays(30));
-
-        $cookie = cookie(
-            'refresh_token',
-            $refreshToken->plainTextToken,
-            43200, // 30 ngày tính bằng phút
-            '/',
-            null,
-            false, // secure - đổi thành true khi đưa lên môi trường https
-            true,  // httpOnly
-            false, // raw
-            'Lax'  // sameSite
-        );
-
-        return response()->json([
-            'user' => $user,
+        $responseData = [
+            'user'         => $user,
             'access_token' => $accessToken->plainTextToken,
-            'token_type' => 'Bearer',
-            'expires_in' => 30 * 60, // 30 phút tính bằng giây
-        ], $status)->withCookie($cookie);
+            'token_type'   => 'Bearer',
+            'expires_in'   => 30 * 60, // 30 phút tính bằng giây
+        ];
+
+        if ($rememberMe) {
+            // 2. Chỉ cấp Refresh Token (Dài hạn - 30 ngày) khi remember_me = true
+            $refreshToken = $user->createToken('refresh_token', ['refresh'], now()->addDays(30));
+
+            $cookie = cookie(
+                'refresh_token',
+                $refreshToken->plainTextToken,
+                43200, // 30 ngày tính bằng phút
+                '/',
+                null,
+                false, // secure - đổi thành true khi đưa lên môi trường https
+                true,  // httpOnly
+                false, // raw
+                'Lax'  // sameSite
+            );
+
+            return response()->json($responseData, $status)->withCookie($cookie);
+        }
+
+        // Không remember: xóa refresh token cookie cũ nếu có (trường hợp re-login)
+        $clearCookie = cookie('refresh_token', '', -1, '/', null, false, true, false, 'Lax');
+
+        return response()->json($responseData, $status)->withCookie($clearCookie);
     }
 
     public function me()
