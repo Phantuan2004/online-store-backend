@@ -120,9 +120,9 @@ class OrderController extends Controller
      * Key = trạng thái hiện tại, Value = mảng trạng thái được phép chuyển sang.
      */
     private const STATUS_TRANSITIONS = [
-        'pending'   => ['paid', 'cancelled'],
-        'paid'      => ['shipped', 'cancelled'],
-        'shipped'   => ['completed'],
+        'pending'   => ['paid', 'shipped', 'completed', 'cancelled'],
+        'paid'      => ['shipped', 'completed', 'cancelled'],
+        'shipped'   => ['completed', 'cancelled'],
         'completed' => [],
         'cancelled' => [],
     ];
@@ -154,17 +154,20 @@ class OrderController extends Controller
                 $updated = true;
 
                 // Đồng bộ trạng thái thanh toán
-                if ($order->payment) {
+                $order->loadMissing('payment');
+                $payment = $order->payment;
+
+                if ($payment) {
                     match ($newStatus) {
-                        'paid' => $order->payment->update([
+                        'paid' => $payment->update([
                             'status' => 'paid',
                             'paid_at' => now(),
                         ]),
-                        'completed' => ($order->payment->method === 'cod') ? $order->payment->update([
+                        'completed' => (strtolower($payment->method) === 'cod') ? $payment->update([
                             'status' => 'paid',
                             'paid_at' => now(),
                         ]) : null,
-                        'cancelled' => $order->payment->update([
+                        'cancelled' => $payment->update([
                             'status' => 'failed',
                         ]),
                         default => null,
