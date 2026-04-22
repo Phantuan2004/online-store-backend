@@ -102,9 +102,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/', [CartController::class, 'clearCart']);
     });
 
-    // Orders
+    // Orders (Customer)
     Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'store']);
     Route::post('orders/{order}/cancel', [OrderController::class, 'cancel']);
+
+    // Orders Management (Admin)
+    Route::middleware('is_admin')->group(function () {
+        Route::put('orders/{order}', [OrderController::class, 'update']);
+    });
 
     // Reviews (Nested Routes)
     Route::prefix('products/{product}/reviews')->group(function () {

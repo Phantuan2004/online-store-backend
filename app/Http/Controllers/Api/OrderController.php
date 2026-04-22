@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Cart;
 use App\Http\Requests\CreateOrderRequest;
+use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -112,6 +113,86 @@ class OrderController extends Controller
                 'errors' => ['checkout' => [$e->getMessage()]]
             ], 422);
         }
+    }
+
+    /**
+     * Bản đồ chuyển đổi trạng thái hợp lệ.
+     * Key = trạng thái hiện tại, Value = mảng trạng thái được phép chuyển sang.
+     */
+    private const STATUS_TRANSITIONS = [
+        'pending'   => ['paid', 'cancelled'],
+        'paid'      => ['shipped', 'cancelled'],
+        'shipped'   => ['completed'],
+        'completed' => [],
+        'cancelled' => [],
+    ];
+
+    /**
+     * Cập nhật đơn hàng (Admin).
+     * Cho phép cập nhật trạng thái, địa chỉ giao hàng.
+     */
+    public function update(UpdateOrderRequest $request, Order $order)
+    {
+        return DB::transaction(function () use ($request, $order) {
+            $updated = false;
+
+            // 1. Cập nhật trạng thái
+            if ($request->has('status')) {
+                $newStatus = $request->validated('status');
+                $currentStatus = $order->status;
+
+                // Kiểm tra transition hợp lệ
+                $allowedTransitions = self::STATUS_TRANSITIONS[$currentStatus] ?? [];
+                if (!in_array($newStatus, $allowedTransitions)) {
+                    return response()->json([
+                        'message' => "Không thể chuyển trạng thái từ '{$currentStatus}' sang '{$newStatus}'.",
+                        'allowed_transitions' => $allowedTransitions,
+                    ], 422);
+                }
+
+                $order->update(['status' => $newStatus]);
+                $updated = true;
+
+                // Đồng bộ trạng thái thanh toán
+                if ($order->payment) {
+                    match ($newStatus) {
+                        'paid' => $order->payment->update([
+                            'status' => 'paid',
+                            'paid_at' => now(),
+                        ]),
+                        'cancelled' => $order->payment->update([
+                            'status' => 'failed',
+                        ]),
+                        default => null,
+                    };
+                }
+
+                // Hoàn kho khi hủy đơn đã xác nhận (paid/shipped)
+                if ($newStatus === 'cancelled' && in_array($currentStatus, ['paid', 'shipped'])) {
+                    foreach ($order->items as $item) {
+                        $item->variant->increment('stock', $item->quantity);
+                    }
+                }
+            }
+
+            // 2. Cập nhật địa chỉ giao hàng
+            if ($request->has('address_id')) {
+                $order->addresses()->sync([$request->validated('address_id')]);
+                $updated = true;
+            }
+
+            if (!$updated) {
+                return response()->json([
+                    'message' => 'Không có dữ liệu nào được cập nhật.',
+                ], 422);
+            }
+
+            $order->load(['items.variant.product', 'payment', 'addresses']);
+
+            return (new OrderResource($order))->additional([
+                'message' => 'Cập nhật đơn hàng thành công.',
+            ]);
+        });
     }
 
     /**
