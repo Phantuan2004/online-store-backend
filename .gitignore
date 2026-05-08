@@ -33,3 +33,6 @@ _ide_helper_models.php
 # Logs
 npm-debug.log
 yarn-error.log
+
+#file md
+ai-chatbot-setup-summary.md

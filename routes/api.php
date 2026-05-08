@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\AttributeValueController;
 use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\AI\AIChatController;
 
 
 /*
@@ -45,6 +46,11 @@ Route::get('attributes/{attribute}', [AttributeController::class, 'show']);
 
 // Payments Callback (Public for Gateway: Accepts both GET for Redirect and POST for IPN)
 Route::match(['get', 'post'], 'payments/callback', [PaymentController::class, 'handleCallback']);
+
+// AI Assistant (Public with Rate Limiting)
+Route::prefix('ai')->group(function () {
+    Route::post('chatbot', [AIChatController::class, 'chat'])->middleware('throttle:30,1');
+});
 
 
 // ==========================================
