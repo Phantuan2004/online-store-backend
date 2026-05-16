@@ -94,6 +94,10 @@ class ProductController extends Controller
                         $variant->attributeValues()->attach($variantValueIds);
                     }
                 }
+
+                // Force sync product price one last time after all variants are created
+                $product->price = $product->variants()->min('price') ?? $product->price;
+                $product->save();
             }
 
             $product->load(['images', 'image', 'variants.image', 'variants.attributeValues.attribute', 'category']);

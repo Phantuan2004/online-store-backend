@@ -15,6 +15,31 @@ class ProductVariant extends Model
 
     protected $fillable = ['product_id', 'sku', 'price', 'stock'];
 
+    protected static function booted()
+    {
+        // Tự động cập nhật giá sản phẩm gốc khi biến thể thay đổi
+        static::saved(function ($variant) {
+            $variant->syncProductPrice();
+        });
+
+        static::deleted(function ($variant) {
+            $variant->syncProductPrice();
+        });
+    }
+
+    /**
+     * Đồng bộ giá thấp nhất của biến thể vào giá của sản phẩm gốc
+     */
+    public function syncProductPrice()
+    {
+        if ($this->product) {
+            $minPrice = $this->product->variants()->min('price');
+            if ($minPrice !== null) {
+                $this->product->update(['price' => $minPrice]);
+            }
+        }
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
